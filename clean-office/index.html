@@ -43,23 +43,11 @@ html, body{
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  /* 실제 오피스 배경 이미지(assets/office_bg.png) 위에 어두운 그라데이션을 덧씌워서
+     흰색 HUD 글자와 캐릭터/쓰레기의 가독성 및 대비를 확보함 */
   background:
-    /* 창문에서 들어오는 빛 느낌의 방사형 그라데이션 */
-    radial-gradient(circle at 15% 10%, rgba(108,140,255,0.25), transparent 40%),
-    radial-gradient(circle at 85% 15%, rgba(255,207,92,0.12), transparent 35%),
-    /* 사무실 바닥/벽 느낌의 메인 그라데이션 */
-    linear-gradient(180deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
-}
-
-/* 배경에 은은한 격자 패턴을 깔아서 '깔끔한 오피스 느낌'을 살림 */
-#game-container::before{
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 48px);
-  pointer-events: none;
+    linear-gradient(180deg, rgba(8,9,20,0.62) 0%, rgba(8,9,20,0.72) 55%, rgba(8,9,20,0.82) 100%),
+    url('assets/office_bg.png') center center / cover no-repeat;
 }
 
 /* 바닥 라인 (사무실 바닥과 벽의 경계처럼 보이도록) */
@@ -71,23 +59,6 @@ html, body{
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
   pointer-events: none;
 }
-
-/* =========================================================
-   2. 배경 장식 오브젝트 (책상/모니터/화분) - 클릭 안 되는 순수 배경
-   ========================================================= */
-.deco{
-  position: absolute;
-  font-size: 42px;
-  opacity: 0.35;
-  filter: grayscale(20%);
-  pointer-events: none;
-  z-index: 0;
-}
-.deco.desk1 { top: 68%; left: 6%;  font-size: 60px; }
-.deco.desk2 { top: 70%; left: 42%; font-size: 60px; }
-.deco.plant { top: 12%; left: 88%; font-size: 50px; opacity: 0.5; }
-.deco.window{ top: 6%;  left: 4%;  font-size: 46px; opacity: 0.3; }
-.deco.clock { top: 5%;  left: 46%; font-size: 34px; opacity: 0.4; }
 
 /* =========================================================
    3. 상단 HUD (로고 / 타이머 / 점수)
@@ -165,16 +136,16 @@ html, body{
 }
 
 /* =========================================================
-   4. 캐릭터 (귀여운 동물) - 사무실을 돌아다니며 쓰레기를 툭 던짐
+   4. 캐릭터 (애니팡류 모바일 퍼즐 마스코트 느낌의 동글동글한 뱃지 캐릭터)
+   ※ 실제 애니팡 캐릭터 이미지/저작물은 사용하지 않고, 그 느낌(동그란 뱃지 + 반짝임 +
+     통통 튀는 애니메이션)만 CSS로 재현했습니다.
    ========================================================= */
 #character{
   position: absolute;
-  font-size: 64px;
   z-index: 20;
   pointer-events: none; /* 캐릭터는 클릭 대상이 아님 */
   opacity: 0;
   transform: scale(0.5);
-  filter: drop-shadow(0 8px 10px rgba(0,0,0,0.4));
 }
 #character.show{
   animation: charAppear 0.5s ease-out forwards;
@@ -190,6 +161,61 @@ html, body{
 @keyframes charDisappear{
   0%   { opacity: 1; transform: scale(1) translateY(0); }
   100% { opacity: 0; transform: scale(0.4) translateY(20px); }
+}
+
+/* 캐릭터를 감싸는 동그란 뱃지 - 애니팡 스타일의 톡톡 튀는 느낌 */
+.char-badge{
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  overflow: hidden; /* 사각형 스프라이트 이미지를 원형 뱃지 모양으로 잘라내기 위함 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: radial-gradient(circle at 35% 28%, #fff8e6 0%, #ffd873 45%, #ff9f43 100%);
+  border: 4px solid #fff;
+  box-shadow:
+    0 10px 18px rgba(0,0,0,0.35),
+    inset 0 -8px 12px rgba(255,255,255,0.35);
+}
+/* 살랑살랑 반짝이는 별 장식 */
+.char-badge::after{
+  content: "✨";
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  font-size: 20px;
+  animation: sparkleTwinkle 1s ease-in-out infinite;
+}
+@keyframes sparkleTwinkle{
+  0%, 100% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+  50%      { opacity: 1;   transform: scale(1.15) rotate(15deg); }
+}
+/* 캐릭터 스프라이트 - assets/characters.png 한 장에 4개 캐릭터(거북이/토끼/돼지/곰)가
+   가로로 나란히 들어있는 것을 배경 이미지로 잘라 쓴다.
+   background-size:400% 100% (=이미지 전체를 4칸으로 나눔) + background-position 으로
+   원하는 칸만 노출시키는 표준 CSS 스프라이트 기법 */
+.char-sprite{
+  width: 100%;
+  height: 100%;
+  background-image: url('assets/characters.png');
+  background-repeat: no-repeat;
+  background-size: 400% 100%;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+}
+.char-sprite-0{ background-position: 0% 50%; }       /* 거북이 */
+.char-sprite-1{ background-position: 33.3333% 50%; } /* 토끼 */
+.char-sprite-2{ background-position: 66.6667% 50%; }  /* 돼지 */
+.char-sprite-3{ background-position: 100% 50%; }      /* 곰 */
+
+/* 등장해 있는 동안 살짝 눌렸다 펴지는 통통 튀는 애니메이션 (애니팡 캐릭터 특유의 탱글탱글함) */
+#character.show .char-badge{
+  animation: badgeSquish 0.55s ease-in-out infinite;
+}
+@keyframes badgeSquish{
+  0%, 100% { transform: scale(1, 1); }
+  50%      { transform: scale(1.06, 0.94); }
 }
 
 /* =========================================================
@@ -231,35 +257,38 @@ html, body{
 }
 
 /* =========================================================
-   6. 휴지통
+   6. 휴지통 - 화면 정중앙, 기존 대비 2배 크기(130px -> 260px)
    ========================================================= */
 #trash-can{
   position: absolute;
-  right: 4%;
-  bottom: 6%;
-  width: 130px;
-  height: 130px;
+  top: 50%;
+  left: 50%;
+  /* 중앙 정렬 + 드래그오버/바운스 시 쓰는 scale을 모두 이 translate 기준으로 합성한다.
+     (translate(-50%,-50%)를 빼먹으면 애니메이션 중 중앙에서 튀어나가 버리니 주의) */
+  transform: translate(-50%, -50%);
+  width: 260px;
+  height: 260px;
   z-index: 15;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 74px;
-  filter: drop-shadow(0 10px 12px rgba(0,0,0,0.45));
+  font-size: 148px;
+  filter: drop-shadow(0 14px 18px rgba(0,0,0,0.45));
   transition: transform 0.15s ease;
 }
 #trash-can::before{
-  /* 휴지통 바닥의 은은한 원형 조명 - 목표 지점임을 강조 */
+  /* 휴지통 바닥의 은은한 원형 조명 - 목표 지점임을 강조 (크기 2배 확대) */
   content: "";
   position: absolute;
-  width: 150px;
-  height: 60px;
-  bottom: -6px;
+  width: 300px;
+  height: 120px;
+  bottom: -10px;
   border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(108,140,255,0.35), transparent 70%);
   z-index: -1;
 }
 #trash-can.target-active{
-  transform: scale(1.15);
+  transform: translate(-50%, -50%) scale(1.15);
 }
 #trash-can.target-active::before{
   background: radial-gradient(ellipse at center, rgba(255,207,92,0.55), transparent 70%);
@@ -268,14 +297,42 @@ html, body{
   animation: binBounce 0.35s ease;
 }
 @keyframes binBounce{
-  0%   { transform: scale(1); }
-  30%  { transform: scale(0.85, 1.15); }
-  60%  { transform: scale(1.15, 0.9); }
-  100% { transform: scale(1); }
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  30%  { transform: translate(-50%, -50%) scale(0.85, 1.15); }
+  60%  { transform: translate(-50%, -50%) scale(1.15, 0.9); }
+  100% { transform: translate(-50%, -50%) scale(1); }
 }
+
+/* WEMADEPLAY 문구가 휴지통을 원형으로 둘러싸는 띠(ring) - SVG textPath 사용 */
+.bin-ring{
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  animation: ringSpin 16s linear infinite; /* 천천히 도는 띠 - 시선을 중앙으로 끌어모으는 효과 */
+}
+.bin-ring-text{
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  fill: var(--accent-2);
+}
+@keyframes ringSpin{
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.bin-emoji{
+  font-size: inherit;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
 #trash-can-label{
   position: absolute;
-  bottom: -22px;
+  bottom: -30px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 12px;
@@ -334,6 +391,53 @@ html, body{
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* 시작 화면 미니 애니메이션 - 캐릭터가 쓰레기를 휴지통으로 던지는 모습을 반복 재생 */
+.start-illustration{
+  position: relative;
+  height: 90px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.illust-char-badge{
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 46px;
+  background: radial-gradient(circle at 35% 28%, #fff8e6 0%, #ffd873 45%, #ff9f43 100%);
+  border: 3px solid #fff;
+  box-shadow: 0 8px 14px rgba(0,0,0,0.35), inset 0 -6px 10px rgba(255,255,255,0.35);
+  animation: illustBounce 1s ease-in-out infinite;
+}
+.illust-bin{
+  font-size: 46px;
+  margin-left: 46px;
+}
+.illust-fly{
+  position: absolute;
+  font-size: 26px;
+  left: 38%;
+  top: 46%;
+  opacity: 0;
+  animation: illustFly 1.6s ease-in-out infinite;
+}
+@keyframes illustBounce{
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+@keyframes illustFly{
+  0%   { left: 34%; top: 44%; opacity: 0;   transform: rotate(0deg) scale(0.6); }
+  12%  { opacity: 1; }
+  50%  { left: 60%; top: 14%; opacity: 1;   transform: rotate(180deg) scale(1); }
+  85%  { left: 78%; top: 42%; opacity: 1;   transform: rotate(320deg) scale(0.85); }
+  100% { left: 80%; top: 48%; opacity: 0;   transform: rotate(360deg) scale(0.4); }
+}
+
 .panel-card h1{
   font-size: 26px;
   margin: 0 0 6px;
@@ -381,13 +485,6 @@ html, body{
 
 <div id="game-container">
 
-  <!-- 배경 장식 (순수 CSS/이모지, 클릭 불가) -->
-  <div class="deco desk1">🖥️</div>
-  <div class="deco desk2">🖥️</div>
-  <div class="deco plant">🌿</div>
-  <div class="deco window">🪟</div>
-  <div class="deco clock">🕐</div>
-
   <!-- 상단 HUD -->
   <div id="hud">
     <div id="wemade-logo">
@@ -400,18 +497,35 @@ html, body{
     </div>
   </div>
 
-  <!-- 캐릭터 (동물이 나타나 쓰레기를 던지는 지점) -->
-  <div id="character">🐰</div>
+  <!-- 캐릭터 (동물이 나타나 쓰레기를 던지는 지점) : 애니팡류 마스코트 느낌의 동그란 뱃지 캐릭터 -->
+  <div id="character">
+    <div class="char-badge">
+      <div class="char-sprite" id="character-sprite"></div>
+    </div>
+  </div>
 
-  <!-- 휴지통 -->
+  <!-- 휴지통 (화면 정중앙, 2배 확대, WEMADEPLAY 문구가 원형 띠로 둘러짐) -->
   <div id="trash-can">
-    🗑️
+    <svg class="bin-ring" viewBox="0 0 220 220">
+      <path id="binRingPath" d="M110,15 A95,95 0 1,1 109.9,15" fill="none"></path>
+      <text class="bin-ring-text">
+        <textPath href="#binRingPath">WEMADEPLAY • WEMADEPLAY • </textPath>
+      </text>
+    </svg>
+    <span class="bin-emoji">🗑️</span>
     <div id="trash-can-label">TRASH</div>
   </div>
 
-  <!-- 시작 화면 -->
+  <!-- 시작 화면 : 캐릭터가 쓰레기를 휴지통에 던지는 모습을 반복 재생하는 미니 애니메이션 포함 -->
   <div class="overlay" id="start-overlay">
     <div class="panel-card">
+      <div class="start-illustration">
+        <div class="illust-char-badge">
+          <div class="char-sprite char-sprite-1" id="illust-char"></div>
+        </div>
+        <span class="illust-fly" id="illust-fly">📄</span>
+        <span class="illust-bin">🗑️</span>
+      </div>
       <h1>🧹 사무실 대청소!</h1>
       <p>
         동물 직원들이 자꾸 쓰레기를 던져놓고 도망가네요...<br>
@@ -444,20 +558,21 @@ const SPAWN_MIN_MS = 1500;           // 쓰레기 생성 간격 최소값
 const SPAWN_MAX_MS = 2000;           // 쓰레기 생성 간격 최대값
 const SCORE_PER_TRASH = 100;         // 쓰레기 1개당 점수
 
-// 캐릭터로 사용할 동물 이모지 목록 (애니팡 느낌의 귀여운 동물들)
-const CHARACTER_EMOJIS = ['🐰', '🐷', '🐻', '🐼', '🐱', '🐨'];
+// 캐릭터로 사용할 캐릭터 스프라이트 인덱스 (assets/characters.png 안의 거북이/토끼/돼지/곰 4종, 왼쪽부터 0~3)
+const CHARACTER_SPRITE_COUNT = 4;
 
 // 사무실에서 나올 법한 쓰레기 아이템 목록
 const TRASH_EMOJIS = ['📄', '☕', '🥤', '🍪', '🍫', '🧃', '🍟', '🥨'];
 
-// 캐릭터가 등장할 위치 후보 (화면 % 기준, HUD와 휴지통 영역은 피해서 배치)
+// 캐릭터가 등장할 위치 후보 (화면 % 기준)
+// 휴지통이 화면 정중앙에 크게 배치되므로, 캐릭터는 중앙을 피해 가장자리 쪽에만 등장하도록 함
 const CHARACTER_SPOTS = [
-  { top: '18%', left: '8%'  },
-  { top: '14%', left: '62%' },
-  { top: '40%', left: '78%' },
-  { top: '55%', left: '10%' },
-  { top: '30%', left: '35%' },
-  { top: '58%', left: '48%' },
+  { top: '14%', left: '8%'  },
+  { top: '12%', left: '68%' },
+  { top: '45%', left: '84%' },
+  { top: '74%', left: '68%' },
+  { top: '74%', left: '10%' },
+  { top: '45%', left: '5%'  },
 ];
 
 // 게임 상태를 담는 객체 (수정 시 이 객체 위주로 확인하면 됨)
@@ -475,6 +590,7 @@ const state = {
    ========================================================= */
 const $container   = document.getElementById('game-container');
 const $character    = document.getElementById('character');
+const $characterSprite = document.getElementById('character-sprite');
 const $trashCan      = document.getElementById('trash-can');
 const $timeLeftText = document.getElementById('time-left');
 const $scoreText    = document.getElementById('score-value');
@@ -578,6 +694,10 @@ function showResult(){
 $startBtn.addEventListener('click', startGame);
 $restartBtn.addEventListener('click', startGame);
 
+// 시작 화면 미니 애니메이션의 캐릭터는 항상 토끼(char-sprite-1)로 고정, 날아가는 쓰레기만 랜덤 선택
+const $illustFly = document.getElementById('illust-fly');
+if ($illustFly) $illustFly.textContent = randomItem(TRASH_EMOJIS);
+
 /* =========================================================
    3. 캐릭터 등장 + 쓰레기 생성 루프
    ========================================================= */
@@ -597,9 +717,10 @@ function spawnCycle(){
     return;
   }
 
-  // 1) 캐릭터를 무작위 위치에 등장시킴
+  // 1) 캐릭터를 무작위 위치에 등장시킴 (스프라이트 4종 중 랜덤 선택)
   const spot = randomItem(CHARACTER_SPOTS);
-  $character.textContent = randomItem(CHARACTER_EMOJIS);
+  const spriteIndex = Math.floor(Math.random() * CHARACTER_SPRITE_COUNT);
+  $characterSprite.className = 'char-sprite char-sprite-' + spriteIndex;
   $character.style.top = spot.top;
   $character.style.left = spot.left;
   $character.className = 'show';
@@ -630,9 +751,22 @@ function spawnTrashFromCharacter(spot){
   const charLeftPx = (parseFloat(spot.left) / 100) * containerRect.width;
   const charTopPx  = (parseFloat(spot.top)  / 100) * containerRect.height + 40; // 캐릭터 몸통 아래쪽에서 던지는 느낌
 
-  // 최종적으로 쓰레기가 놓일 위치 (HUD 및 휴지통 영역을 피한 안전 범위 내 랜덤)
-  const landLeftPx = randomBetween(containerRect.width * 0.05, containerRect.width * 0.80);
-  const landTopPx  = randomBetween(containerRect.height * 0.20, containerRect.height * 0.78);
+  // 최종적으로 쓰레기가 놓일 위치 계산
+  // 휴지통이 화면 정중앙에 크게 배치되어 있으므로, 중앙을 기준으로 일정 반경 밖(도넛 모양 영역)에
+  // 랜덤한 각도로 착지 지점을 잡아서 휴지통과 겹치지 않게 함
+  const centerX = containerRect.width / 2;
+  const centerY = containerRect.height / 2;
+  const minRadius = Math.min(containerRect.width, containerRect.height) * 0.32; // 휴지통 바로 바깥
+  const maxRadius = Math.min(containerRect.width, containerRect.height) * 0.46; // 화면 가장자리 못 미치는 선
+  const angle = randomBetween(0, Math.PI * 2);
+  const radius = randomBetween(minRadius, maxRadius);
+
+  let landLeftPx = centerX + Math.cos(angle) * radius;
+  let landTopPx  = centerY + Math.sin(angle) * radius;
+
+  // HUD(상단 74px)와 화면 밖으로 벗어나지 않도록 최종 보정
+  landLeftPx = Math.max(30, Math.min(containerRect.width - 40, landLeftPx));
+  landTopPx  = Math.max(100, Math.min(containerRect.height - 40, landTopPx));
 
   const $trash = document.createElement('div');
   $trash.className = 'trash';
