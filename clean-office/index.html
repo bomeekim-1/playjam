@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사무실 대청소! - WEMADE PLAY</title>
+
+<style>
+/* =========================================================
+   0. 공통 리셋
+   ========================================================= */
+* {
+  box-sizing: border-box;
+  user-select: none;          /* 드래그 중 텍스트 선택 방지 */
+  -webkit-user-drag: none;     /* 네이티브 이미지 드래그 방지(아이콘 오배치 방지) */
+  touch-action: none;          /* 모바일에서 스크롤/확대 대신 포인터 이벤트가 우선되도록 */
+}
+
+:root{
+  --navy-1: #12142b;
+  --navy-2: #1b1f45;
+  --navy-3: #262b5c;
+  --accent: #6c8cff;   /* 위메이드 느낌의 블루/퍼플 포인트 */
+  --accent-2: #ffcf5c; /* 골드 포인트 (점수/로고) */
+  --danger: #ff5c5c;
+  --success: #4ade80;
+  --panel: rgba(255,255,255,0.06);
+}
+
+html, body{
+  margin: 0;
+  height: 100%;
+  font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  background: #05060f;
+  overflow: hidden;
+}
+
+/* =========================================================
+   1. 게임 전체 컨테이너 (여기가 '사무실' 배경)
+   ========================================================= */
+#game-container{
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background:
+    /* 창문에서 들어오는 빛 느낌의 방사형 그라데이션 */
+    radial-gradient(circle at 15% 10%, rgba(108,140,255,0.25), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(255,207,92,0.12), transparent 35%),
+    /* 사무실 바닥/벽 느낌의 메인 그라데이션 */
+    linear-gradient(180deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%);
+}
+
+/* 배경에 은은한 격자 패턴을 깔아서 '깔끔한 오피스 느낌'을 살림 */
+#game-container::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 48px);
+  pointer-events: none;
+}
+
+/* 바닥 라인 (사무실 바닥과 벽의 경계처럼 보이도록) */
+#game-container::after{
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 18%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  pointer-events: none;
+}
+
+/* =========================================================
+   2. 배경 장식 오브젝트 (책상/모니터/화분) - 클릭 안 되는 순수 배경
+   ========================================================= */
+.deco{
+  position: absolute;
+  font-size: 42px;
+  opacity: 0.35;
+  filter: grayscale(20%);
+  pointer-events: none;
+  z-index: 0;
+}
+.deco.desk1 { top: 68%; left: 6%;  font-size: 60px; }
+.deco.desk2 { top: 70%; left: 42%; font-size: 60px; }
+.deco.plant { top: 12%; left: 88%; font-size: 50px; opacity: 0.5; }
+.deco.window{ top: 6%;  left: 4%;  font-size: 46px; opacity: 0.3; }
+.deco.clock { top: 5%;  left: 46%; font-size: 34px; opacity: 0.4; }
+
+/* =========================================================
+   3. 상단 HUD (로고 / 타이머 / 점수)
+   ========================================================= */
+#hud{
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: linear-gradient(180deg, rgba(5,6,15,0.85), rgba(5,6,15,0));
+  z-index: 50;
+  pointer-events: none; /* HUD 영역은 드래그를 방해하지 않도록 */
+}
+
+/* 위메이드 스타일의 가상 로고 */
+#wemade-logo{
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 0 12px rgba(108,140,255,0.6);
+}
+#wemade-logo .logo-mark{
+  width: 26px; height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: inline-block;
+  box-shadow: 0 0 14px rgba(108,140,255,0.7);
+}
+#wemade-logo .logo-sub{
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--accent-2);
+  margin-left: 4px;
+  letter-spacing: 2px;
+}
+
+#hud-stats{
+  display: flex;
+  gap: 16px;
+}
+.stat-pill{
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(6px);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 700;
+  font-size: 17px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 92px;
+  justify-content: center;
+}
+#timer-pill.warning{
+  color: var(--danger);
+  border-color: rgba(255,92,92,0.5);
+  animation: pulseWarning 0.6s infinite;
+}
+#score-pill{
+  color: var(--accent-2);
+}
+
+@keyframes pulseWarning{
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.12); }
+}
+
+/* =========================================================
+   4. 캐릭터 (귀여운 동물) - 사무실을 돌아다니며 쓰레기를 툭 던짐
+   ========================================================= */
+#character{
+  position: absolute;
+  font-size: 64px;
+  z-index: 20;
+  pointer-events: none; /* 캐릭터는 클릭 대상이 아님 */
+  opacity: 0;
+  transform: scale(0.5);
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,0.4));
+}
+#character.show{
+  animation: charAppear 0.5s ease-out forwards;
+}
+#character.hide{
+  animation: charDisappear 0.35s ease-in forwards;
+}
+@keyframes charAppear{
+  0%   { opacity: 0; transform: scale(0.3) translateY(20px); }
+  60%  { opacity: 1; transform: scale(1.15) translateY(-6px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes charDisappear{
+  0%   { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.4) translateY(20px); }
+}
+
+/* =========================================================
+   5. 쓰레기 아이템
+   ========================================================= */
+.trash{
+  position: absolute;
+  font-size: 46px;
+  z-index: 30;
+  cursor: grab;
+  line-height: 1;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,0.35));
+  touch-action: none;
+  will-change: transform, left, top;
+}
+.trash.idle-bob{
+  animation: idleBob 2.4s ease-in-out infinite;
+}
+@keyframes idleBob{
+  0%,100% { margin-top: 0px; }
+  50%     { margin-top: -6px; }
+}
+.trash.dragging{
+  cursor: grabbing;
+  transition: none !important;
+  z-index: 999;
+  filter: drop-shadow(0 12px 14px rgba(0,0,0,0.5));
+}
+.trash.landing{
+  transition: top 0.45s cubic-bezier(.2,.8,.2,1.2), left 0.45s cubic-bezier(.2,.8,.2,1.2);
+}
+.trash.success{
+  animation: trashSuccess 0.35s ease-in forwards;
+  pointer-events: none;
+}
+@keyframes trashSuccess{
+  0%   { transform: scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: scale(0.2) rotate(160deg) translateY(20px); opacity: 0; }
+}
+
+/* =========================================================
+   6. 휴지통
+   ========================================================= */
+#trash-can{
+  position: absolute;
+  right: 4%;
+  bottom: 6%;
+  width: 130px;
+  height: 130px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 74px;
+  filter: drop-shadow(0 10px 12px rgba(0,0,0,0.45));
+  transition: transform 0.15s ease;
+}
+#trash-can::before{
+  /* 휴지통 바닥의 은은한 원형 조명 - 목표 지점임을 강조 */
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 60px;
+  bottom: -6px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(108,140,255,0.35), transparent 70%);
+  z-index: -1;
+}
+#trash-can.target-active{
+  transform: scale(1.15);
+}
+#trash-can.target-active::before{
+  background: radial-gradient(ellipse at center, rgba(255,207,92,0.55), transparent 70%);
+}
+#trash-can.bounce{
+  animation: binBounce 0.35s ease;
+}
+@keyframes binBounce{
+  0%   { transform: scale(1); }
+  30%  { transform: scale(0.85, 1.15); }
+  60%  { transform: scale(1.15, 0.9); }
+  100% { transform: scale(1); }
+}
+#trash-can-label{
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 700;
+}
+
+/* =========================================================
+   7. 점수 팝업 ("+100")
+   ========================================================= */
+.score-popup{
+  position: absolute;
+  font-weight: 800;
+  font-size: 28px;
+  color: var(--accent-2);
+  text-shadow: 0 0 10px rgba(255,207,92,0.8), 0 2px 2px rgba(0,0,0,0.5);
+  z-index: 200;
+  pointer-events: none;
+  animation: floatUp 0.9s ease-out forwards;
+}
+@keyframes floatUp{
+  0%   { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+  15%  { opacity: 1; transform: translate(-50%, -10px) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -80px) scale(1); }
+}
+
+/* =========================================================
+   8. 시작 오버레이 & 결과 모달
+   ========================================================= */
+.overlay{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5,6,15,0.72);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+}
+.overlay.hidden{ display: none; }
+
+.panel-card{
+  background: linear-gradient(160deg, #1b1f45, #12142b);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 40px 48px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  max-width: 420px;
+  animation: modalPop 0.35s ease-out;
+}
+@keyframes modalPop{
+  0%   { opacity: 0; transform: scale(0.85) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.panel-card h1{
+  font-size: 26px;
+  margin: 0 0 6px;
+}
+.panel-card h2{
+  font-size: 24px;
+  margin: 0 0 14px;
+  color: var(--accent-2);
+}
+.panel-card p{
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.8);
+  margin: 6px 0 22px;
+}
+.panel-card .final-score{
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--accent-2);
+  margin: 6px 0 4px;
+}
+.big-btn{
+  background: linear-gradient(135deg, var(--accent), #4a5ee0);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(108,140,255,0.4);
+  transition: transform 0.15s ease;
+}
+.big-btn:hover{ transform: translateY(-2px); }
+.big-btn:active{ transform: translateY(0); }
+
+.instruction{
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  margin-top: -6px;
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+
+  <!-- 배경 장식 (순수 CSS/이모지, 클릭 불가) -->
+  <div class="deco desk1">🖥️</div>
+  <div class="deco desk2">🖥️</div>
+  <div class="deco plant">🌿</div>
+  <div class="deco window">🪟</div>
+  <div class="deco clock">🕐</div>
+
+  <!-- 상단 HUD -->
+  <div id="hud">
+    <div id="wemade-logo">
+      <span class="logo-mark"></span>
+      WEMADE<span class="logo-sub">PLAY</span>
+    </div>
+    <div id="hud-stats">
+      <div class="stat-pill" id="timer-pill">⏱ <span id="time-left">60</span></div>
+      <div class="stat-pill" id="score-pill">🏆 <span id="score-value">0</span></div>
+    </div>
+  </div>
+
+  <!-- 캐릭터 (동물이 나타나 쓰레기를 던지는 지점) -->
+  <div id="character">🐰</div>
+
+  <!-- 휴지통 -->
+  <div id="trash-can">
+    🗑️
+    <div id="trash-can-label">TRASH</div>
+  </div>
+
+  <!-- 시작 화면 -->
+  <div class="overlay" id="start-overlay">
+    <div class="panel-card">
+      <h1>🧹 사무실 대청소!</h1>
+      <p>
+        동물 직원들이 자꾸 쓰레기를 던져놓고 도망가네요...<br>
+        60초 안에 쓰레기를 <b>드래그</b>해서 휴지통에 넣어주세요!
+      </p>
+      <button class="big-btn" id="start-btn">게임 시작</button>
+    </div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div class="overlay hidden" id="result-overlay">
+    <div class="panel-card">
+      <h1>⏰ 타임 오버!</h1>
+      <div class="final-score" id="final-score">0점</div>
+      <h2 id="result-title">청소 완료!</h2>
+      <p id="result-message"></p>
+      <button class="big-btn" id="restart-btn">다시 도전하기</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   0. 게임 상수 & 상태
+   ========================================================= */
+const GAME_TIME = 60;               // 제한시간(초)
+const MAX_TRASH_ON_SCREEN = 8;       // 화면에 동시에 존재 가능한 쓰레기 최대 개수(너무 많아지는 것 방지)
+const SPAWN_MIN_MS = 1500;           // 쓰레기 생성 간격 최소값
+const SPAWN_MAX_MS = 2000;           // 쓰레기 생성 간격 최대값
+const SCORE_PER_TRASH = 100;         // 쓰레기 1개당 점수
+
+// 캐릭터로 사용할 동물 이모지 목록 (애니팡 느낌의 귀여운 동물들)
+const CHARACTER_EMOJIS = ['🐰', '🐷', '🐻', '🐼', '🐱', '🐨'];
+
+// 사무실에서 나올 법한 쓰레기 아이템 목록
+const TRASH_EMOJIS = ['📄', '☕', '🥤', '🍪', '🍫', '🧃', '🍟', '🥨'];
+
+// 캐릭터가 등장할 위치 후보 (화면 % 기준, HUD와 휴지통 영역은 피해서 배치)
+const CHARACTER_SPOTS = [
+  { top: '18%', left: '8%'  },
+  { top: '14%', left: '62%' },
+  { top: '40%', left: '78%' },
+  { top: '55%', left: '10%' },
+  { top: '30%', left: '35%' },
+  { top: '58%', left: '48%' },
+];
+
+// 게임 상태를 담는 객체 (수정 시 이 객체 위주로 확인하면 됨)
+const state = {
+  score: 0,
+  timeLeft: GAME_TIME,
+  isPlaying: false,
+  spawnTimerId: null,   // 쓰레기 생성 setTimeout id
+  countdownTimerId: null, // 1초마다 도는 타이머 interval id
+  trashCount: 0,         // 현재 화면에 떠 있는 쓰레기 개수
+};
+
+/* =========================================================
+   1. DOM 참조
+   ========================================================= */
+const $container   = document.getElementById('game-container');
+const $character    = document.getElementById('character');
+const $trashCan      = document.getElementById('trash-can');
+const $timeLeftText = document.getElementById('time-left');
+const $scoreText    = document.getElementById('score-value');
+const $timerPill     = document.getElementById('timer-pill');
+const $startOverlay = document.getElementById('start-overlay');
+const $startBtn      = document.getElementById('start-btn');
+const $resultOverlay = document.getElementById('result-overlay');
+const $restartBtn    = document.getElementById('restart-btn');
+const $finalScore    = document.getElementById('final-score');
+const $resultTitle   = document.getElementById('result-title');
+const $resultMessage = document.getElementById('result-message');
+
+/* =========================================================
+   2. 게임 시작 / 종료 / 리셋
+   ========================================================= */
+function startGame(){
+  // 상태 초기화
+  state.score = 0;
+  state.timeLeft = GAME_TIME;
+  state.isPlaying = true;
+  state.trashCount = 0;
+
+  $scoreText.textContent = state.score;
+  $timeLeftText.textContent = state.timeLeft;
+  $timerPill.classList.remove('warning');
+
+  // 화면에 남아있던 쓰레기 제거 (재시작 대비)
+  document.querySelectorAll('.trash').forEach(el => el.remove());
+
+  $startOverlay.classList.add('hidden');
+  $resultOverlay.classList.add('hidden');
+
+  // TODO: 효과음 재생 코드 (예: 게임 시작 BGM/사운드 파일 재생)
+  // 예시: new Audio('sounds/start.mp3').play();
+
+  // 1초마다 타이머 감소
+  state.countdownTimerId = setInterval(tickCountdown, 1000);
+
+  // 쓰레기 생성 루프 시작 (첫 생성은 즉시 예약)
+  scheduleNextSpawn();
+}
+
+function tickCountdown(){
+  state.timeLeft -= 1;
+  $timeLeftText.textContent = state.timeLeft;
+
+  if (state.timeLeft <= 10) {
+    $timerPill.classList.add('warning');
+    // TODO: 효과음 재생 코드 (예: 남은시간 10초 이하 긴장감 있는 '똑똑' 카운트 사운드)
+  }
+
+  if (state.timeLeft <= 0) {
+    endGame();
+  }
+}
+
+function endGame(){
+  state.isPlaying = false;
+
+  clearInterval(state.countdownTimerId);
+  clearTimeout(state.spawnTimerId);
+
+  // 캐릭터 정리
+  $character.className = '';
+  $character.style.opacity = 0;
+
+  // 남아있는 쓰레기는 더 이상 드래그되지 않도록 (pointer-events off)
+  document.querySelectorAll('.trash').forEach(el => {
+    el.style.pointerEvents = 'none';
+  });
+
+  // TODO: 효과음 재생 코드 (예: 게임 종료 팡파레 사운드)
+
+  showResult();
+}
+
+function showResult(){
+  $finalScore.textContent = state.score + '점';
+
+  // 점수에 따라 위트있는 결과 문구를 다르게 보여줌
+  let title, message;
+  if (state.score >= 2000) {
+    title = '청소왕 등극! 👑';
+    message = '역시 위메이드 최고의 청소부! 사무실이 반짝반짝 빛나네요. 오늘도 위메이드를 깨끗하게 지켜내셨군요!';
+  } else if (state.score >= 1000) {
+    title = '오늘도 수고하셨어요! ✨';
+    message = '오늘도 위메이드를 깨끗하게 지켜내셨군요! 팀장님이 흐뭇해하실 거예요.';
+  } else if (state.score >= 500) {
+    title = '조금 더 힘내봐요! 💪';
+    message = '그래도 애쓰셨어요. 내일은 조금 더 빠른 손놀림을 기대할게요!';
+  } else {
+    title = '사무실이... 조금 어수선해요 😅';
+    message = '어이쿠, 쓰레기가 아직 많이 남았네요. 청소팀 지원 요청이 필요할지도?';
+  }
+
+  $resultTitle.textContent = title;
+  $resultMessage.textContent = message;
+  $resultOverlay.classList.remove('hidden');
+}
+
+$startBtn.addEventListener('click', startGame);
+$restartBtn.addEventListener('click', startGame);
+
+/* =========================================================
+   3. 캐릭터 등장 + 쓰레기 생성 루프
+   ========================================================= */
+function scheduleNextSpawn(){
+  if (!state.isPlaying) return;
+
+  const delay = randomBetween(SPAWN_MIN_MS, SPAWN_MAX_MS);
+  state.spawnTimerId = setTimeout(spawnCycle, delay);
+}
+
+function spawnCycle(){
+  if (!state.isPlaying) return;
+
+  // 화면에 쓰레기가 너무 많으면 이번 턴은 생성을 쉬고 다음 턴을 예약
+  if (state.trashCount >= MAX_TRASH_ON_SCREEN) {
+    scheduleNextSpawn();
+    return;
+  }
+
+  // 1) 캐릭터를 무작위 위치에 등장시킴
+  const spot = randomItem(CHARACTER_SPOTS);
+  $character.textContent = randomItem(CHARACTER_EMOJIS);
+  $character.style.top = spot.top;
+  $character.style.left = spot.left;
+  $character.className = 'show';
+
+  // TODO: 효과음 재생 코드 (예: 동물 캐릭터 등장 '뽀잉' 사운드)
+
+  // 2) 잠시 후 캐릭터 위치 근처에서 쓰레기를 '툭' 던짐
+  setTimeout(() => {
+    if (state.isPlaying) spawnTrashFromCharacter(spot);
+  }, 350);
+
+  // 3) 캐릭터는 던지고 나서 곧 사라짐
+  setTimeout(() => {
+    $character.className = 'hide';
+  }, 900);
+
+  // 4) 다음 생성 예약
+  scheduleNextSpawn();
+}
+
+/* =========================================================
+   4. 쓰레기 오브젝트 생성 (캐릭터 위치 -> 최종 낙하 위치로 애니메이션)
+   ========================================================= */
+function spawnTrashFromCharacter(spot){
+  const containerRect = $container.getBoundingClientRect();
+
+  // 캐릭터의 실제 픽셀 위치 계산 (퍼센트 좌표 -> px 좌표)
+  const charLeftPx = (parseFloat(spot.left) / 100) * containerRect.width;
+  const charTopPx  = (parseFloat(spot.top)  / 100) * containerRect.height + 40; // 캐릭터 몸통 아래쪽에서 던지는 느낌
+
+  // 최종적으로 쓰레기가 놓일 위치 (HUD 및 휴지통 영역을 피한 안전 범위 내 랜덤)
+  const landLeftPx = randomBetween(containerRect.width * 0.05, containerRect.width * 0.80);
+  const landTopPx  = randomBetween(containerRect.height * 0.20, containerRect.height * 0.78);
+
+  const $trash = document.createElement('div');
+  $trash.className = 'trash';
+  $trash.textContent = randomItem(TRASH_EMOJIS);
+  $trash.style.left = charLeftPx + 'px';
+  $trash.style.top  = charTopPx + 'px';
+  $trash.style.transform = `rotate(${randomBetween(-25, 25)}deg)`;
+
+  $container.appendChild($trash);
+  state.trashCount += 1;
+
+  // 캐릭터 위치 -> 낙하 위치로 부드럽게 이동시키는 '던지기' 애니메이션
+  requestAnimationFrame(() => {
+    $trash.classList.add('landing');
+    $trash.style.left = landLeftPx + 'px';
+    $trash.style.top  = landTopPx + 'px';
+  });
+
+  // 착지 후에는 살짝 흔들리는(idle-bob) 애니메이션으로 시각적 생동감을 주고, 드래그 가능하게 함
+  $trash.addEventListener('transitionend', function onLand(){
+    $trash.removeEventListener('transitionend', onLand);
+    $trash.classList.remove('landing');
+    $trash.classList.add('idle-bob');
+  });
+
+  enableDrag($trash);
+}
+
+/* =========================================================
+   5. 드래그 앤 드롭 로직 (Pointer Events 기반 - 마우스/터치 모두 지원)
+   ========================================================= */
+function enableDrag($trash){
+  // 드래그 시작 시점의 상태를 저장해 둘 변수들
+  let startPointerX = 0, startPointerY = 0;   // 드래그 시작한 순간의 커서 위치
+  let baseLeft = 0, baseTop = 0;              // 드래그 시작 시점의 쓰레기 위치(px)
+
+  $trash.addEventListener('pointerdown', onPointerDown);
+
+  function onPointerDown(e){
+    if (!state.isPlaying) return;
+
+    $trash.setPointerCapture(e.pointerId);
+    $trash.classList.remove('idle-bob');
+    $trash.classList.add('dragging');
+
+    startPointerX = e.clientX;
+    startPointerY = e.clientY;
+    baseLeft = parseFloat($trash.style.left) || 0;
+    baseTop  = parseFloat($trash.style.top)  || 0;
+
+    // TODO: 효과음 재생 코드 (예: 쓰레기를 집을 때 '쓱' 하는 사운드)
+
+    $trash.addEventListener('pointermove', onPointerMove);
+    $trash.addEventListener('pointerup', onPointerUp);
+    $trash.addEventListener('pointercancel', onPointerUp);
+  }
+
+  function onPointerMove(e){
+    // 이동한 거리(delta)만큼 transform으로 이동시켜 부드럽고 가벼운 드래그감을 만듦
+    const dx = e.clientX - startPointerX;
+    const dy = e.clientY - startPointerY;
+    $trash.style.transform = `translate(${dx}px, ${dy}px)`;
+
+    // 휴지통 위에 올라와 있는지 실시간으로 체크해서 휴지통에 하이라이트 표시
+    if (isOverTrashCan(e.clientX, e.clientY)) {
+      $trashCan.classList.add('target-active');
+    } else {
+      $trashCan.classList.remove('target-active');
+    }
+  }
+
+  function onPointerUp(e){
+    $trash.releasePointerCapture(e.pointerId);
+    $trash.removeEventListener('pointermove', onPointerMove);
+    $trash.removeEventListener('pointerup', onPointerUp);
+    $trash.removeEventListener('pointercancel', onPointerUp);
+
+    $trash.classList.remove('dragging');
+    $trashCan.classList.remove('target-active');
+
+    const dx = e.clientX - startPointerX;
+    const dy = e.clientY - startPointerY;
+
+    if (isOverTrashCan(e.clientX, e.clientY)) {
+      handleSuccessDrop(e.clientX, e.clientY, $trash);
+    } else {
+      // 목표에 들어가지 못했다면, 이동한 위치를 실제 left/top 값으로 반영(bake)하고
+      // transform은 초기화해서 다음 드래그 계산이 어긋나지 않게 함
+      $trash.style.left = (baseLeft + dx) + 'px';
+      $trash.style.top  = (baseTop + dy) + 'px';
+      $trash.style.transform = 'rotate(0deg)';
+      $trash.classList.add('idle-bob');
+    }
+  }
+}
+
+// 현재 커서 좌표가 휴지통 영역 위에 있는지 판정
+function isOverTrashCan(clientX, clientY){
+  const binRect = $trashCan.getBoundingClientRect();
+  return (
+    clientX >= binRect.left &&
+    clientX <= binRect.right &&
+    clientY >= binRect.top &&
+    clientY <= binRect.bottom
+  );
+}
+
+/* =========================================================
+   6. 성공 처리 (점수 증가 + 이펙트)
+   ========================================================= */
+function handleSuccessDrop(dropX, dropY, $trash){
+  state.score += SCORE_PER_TRASH;
+  $scoreText.textContent = state.score;
+  state.trashCount -= 1;
+
+  // 휴지통 바운스 이펙트
+  $trashCan.classList.remove('bounce');
+  // 리플로우를 강제해서 animation을 다시 재생시킴
+  void $trashCan.offsetWidth;
+  $trashCan.classList.add('bounce');
+
+  // "+100" 텍스트 팝업 (사운드 없이도 타격감을 살리는 시각 이펙트)
+  showScorePopup(dropX, dropY);
+
+  // TODO: 효과음 재생 코드 (예: 쓰레기가 휴지통에 들어갈 때 '휙-착!' 성공 사운드)
+
+  // 쓰레기는 살짝 줄어들며 사라지는 애니메이션 후 제거
+  $trash.style.transform = 'translate(0,0)';
+  $trash.classList.add('success');
+  setTimeout(() => $trash.remove(), 350);
+}
+
+function showScorePopup(x, y){
+  const $popup = document.createElement('div');
+  $popup.className = 'score-popup';
+  $popup.textContent = '+' + SCORE_PER_TRASH;
+  $popup.style.left = x + 'px';
+  $popup.style.top  = (y - 30) + 'px';
+  document.body.appendChild($popup);
+
+  setTimeout(() => $popup.remove(), 900);
+}
+
+/* =========================================================
+   7. 유틸리티 함수
+   ========================================================= */
+function randomBetween(min, max){
+  return Math.random() * (max - min) + min;
+}
+function randomItem(arr){
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+</script>
+</body>
+</html>
